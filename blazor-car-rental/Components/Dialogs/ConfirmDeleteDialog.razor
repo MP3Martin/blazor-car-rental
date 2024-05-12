@@ -1,0 +1,57 @@
+@inject StateService StateService
+@typeparam T where T : ITableItem
+
+<MudDialog DefaultFocus="DefaultFocus.FirstChild">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Delete" Class="mr-3 mb-n1"/>
+            Confirmation
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText>Are you really sure you want to delete @(Item.DisplayName)?</MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudSpacer></MudSpacer>
+        <MudButton Variant="Variant.Filled" Color="Color.Dark" OnClick="Cancel" Size="Size.Small">
+            CANCEL
+        </MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="Ok" Size="@Size.Small">
+            DELETE!
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; } = null!;
+
+    // ReSharper disable once CSharpWarnings::CS8618
+    [Parameter]
+    [EditorRequired]
+    public T Item { get; set; } = default!;
+
+    private void Ok() {
+        switch (Item) {
+            case Customer customer:
+                foreach (var rentedCar in customer.RentedCars.ToList()) {
+                    rentedCar.Return(StateService);
+                }
+
+                StateService.Customers.Remove(customer);
+                break;
+            case Car car:
+                try {
+                    StateService.Customers.First(x => x.RentedCars.Contains(car)).RentedCars.Remove(car);
+                } catch (InvalidOperationException) { }
+
+                break;
+        }
+
+        StateService.Edited();
+        MudDialog.CancelAll();
+    }
+    private void Cancel() {
+        MudDialog.Cancel();
+    }
+}

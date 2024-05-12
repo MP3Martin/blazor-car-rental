@@ -1,0 +1,10 @@
+@inject PageNameService PageNameService
+
+@code {
+    [Parameter]
+    public string? Name { get; set; }
+
+    protected override void OnParametersSet() {
+        PageNameService.SetCurrentPageName(Name ?? string.Empty);
+    }
+}

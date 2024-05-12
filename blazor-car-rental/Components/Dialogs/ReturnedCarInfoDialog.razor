@@ -1,0 +1,38 @@
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            The car has been returned.
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText>
+            The user has to pay @HasToPay <MudIcon Icon="@Icons.Material.Filled.AttachMoney" Class="mb-n1 ml-n2"/>
+            (the car has been rented for @DayCount days at
+            @CostPerDay <MudIcon Icon="@Icons.Material.Filled.AttachMoney" Class="mb-n1 ml-n2"/> per day)
+        </MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="Cancel" Size="Size.Small">Ok</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    [EditorRequired]
+    public int HasToPay { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public int DayCount { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public int CostPerDay { get; set; }
+
+    void Cancel() {
+        MudDialog.Cancel();
+    }
+}

@@ -1,0 +1,29 @@
+@inject ILocalStorageService LocalStorage
+@inject StateService StateService;
+
+<MudCard Style="width: fit-content;" Outlined="true">
+    <MudCardHeader Class="py-1">
+        <MudSwitch T="bool" Value="Value" ValueChanged="ValueChanged" Label="@Name" Color="Color.Info"
+                   Style="width: 100%;"/>
+    </MudCardHeader>
+    @if (Description is not null) {
+        <MudCardContent Class="pt-1 pb-2">
+            <MudText Typo="Typo.body2">@((MarkupString)Description.Replace("\n", "<br/>"))</MudText>
+        </MudCardContent>
+    }
+</MudCard>
+
+@code {
+    [Parameter]
+    public bool Value { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public string Name { get; set; } = null!;
+
+    [Parameter]
+    public EventCallback<bool> ValueChanged { get; set; }
+
+    [Parameter]
+    public string? Description { get; set; }
+}

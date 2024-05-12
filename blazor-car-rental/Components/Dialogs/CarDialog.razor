@@ -1,0 +1,179 @@
+@inject IDialogService DialogService
+@inject IJSRuntime JS
+
+<MudDialog DefaultFocus="DefaultFocus.FirstChild">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@(_isEditing ? Icons.Material.Filled.Edit : Icons.Material.Filled.AddCircle)"
+                     Class="mr-3 mb-n1"/>
+            @(_isEditing ? "Edit" : "Add") a car
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <EditForm EditContext="_editContext" OnValidSubmit="Ok">
+            <DataAnnotationsValidator/>
+            <MudTextField OnlyValidateIfDirty="true" @bind-Value="Model.Manufacturer"
+                          For="() => Model.Manufacturer" Label="Manufacturer*" Immediate="true"/>
+            <MudTextField OnlyValidateIfDirty="true" @bind-Value="Model.Model"
+                          For="() => Model.Model" Label="Model*" Immediate="true"/>
+            <MudTextField OnlyValidateIfDirty="true" @bind-Value="Model.LicensePlate"
+                          For="() => Model.LicensePlate" Label="License plate*" Immediate="true"/>
+            <MudNumericField OnlyValidateIfDirty="true" @bind-Value="Model.SeatCount"
+                             For="() => Model.SeatCount" Label="Seat count*" Immediate="true" Min="0"/>
+            @if (!StateService.IsTouchDevice) {
+                <MudText Typo="Typo.caption" Style=@($"color: {Colors.Grey.Lighten1};")>
+                    Tip: Hold shift and scroll
+                    over the number input to set the number quickly
+                </MudText>
+            }
+            <MudNumericField OnlyValidateIfDirty="true" @bind-Value="Model.Mileage"
+                             For="() => Model.Mileage" Label="Mileage*" Immediate="true" Min="0"/>
+            <MudNumericField OnlyValidateIfDirty="true" @bind-Value="Model.CostPerDay"
+                             For="() => Model.CostPerDay" Label="Cost per day*" Immediate="true" Min="0"/>
+            <MudDatePicker Label="Production year" DateFormat="yyyy" Editable="true" FixMonth="1" FixDay="1"
+                           DisableToolbar="true" @ref="_datePicker" ImmediateText="true"
+                           PickerMonthChanged="DatePickerMonthChanged" OpenTo="OpenTo.Year"
+                           Date="_productionYearDateTime" Required="true">
+                <PickerActions Context="_">
+                    <span id="production-year-date-picker" style="display: none;"></span>
+                </PickerActions>
+            </MudDatePicker>
+            @if (Model.RentalRecord is not null) {
+                <MudDatePicker Label="Rented on" Editable="true" ImmediateText="true"
+                               @bind-Date="Model.RentalRecord.DateRented"
+                               For="() => Model.RentalRecord.DateRented"
+                               Required="true">
+                </MudDatePicker>
+            }
+            <MudTextField OnlyValidateIfDirty="true" @bind-Value="Model.VIN"
+                          For="() => Model.VIN" Label="VIN*" Immediate="true"/>
+            <MudSelect T="Customer?" Label="Rent to*" Clearable="true"
+                       OnClearButtonClick="RentToSelectionOnClearButtonClick" @bind-Value="_rentToSelection">
+                @foreach (var customer in StateService.Customers) {
+                    <MudSelectItem T="Customer" Value="customer">@customer.DisplayName</MudSelectItem>
+                }
+            </MudSelect>
+            @if (CarParameter!.RentState == Car.RentStates.Rented) {
+                <MudText Typo="Typo.caption" Style=@($"color: {Colors.Grey.Lighten1};")>
+                    Tip: Set "Rent to" to "Not rented" to return the car
+                </MudText>
+            }
+        </EditForm>
+    </DialogContent>
+
+    <DialogActions>
+        @if (_isEditing) {
+            <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="Delete" Size="Size.Small">
+                DELETE
+            </MudButton>
+        }
+        <MudSpacer></MudSpacer>
+        <MudButton Variant="Variant.Filled" Color="Color.Dark" OnClick="Cancel" Size="Size.Small">
+            CANCEL
+        </MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Success" Disabled="!_editContext.Validate()"
+                   OnClick="TrySubmitForm" Size="@Size.Small">
+            OK
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@{
+    try {
+        TryFixDatePickerText();
+    } catch {
+        // ignored
+    }
+}
+
+@code {
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; } = null!;
+
+    private void Ok() {
+        Model.ProductionYear = (short)_productionYearDateTime!.Value.Year;
+        Model.RentedTo = _rentToSelection;
+        MudDialog.Close(DialogResult.Ok(Model));
+    }
+
+    private void Delete() {
+        DialogService.Show<ConfirmDeleteDialog<Car>>(null,
+            new DialogParameters<ConfirmDeleteDialog<Car>> {
+                { x => x.Item, CarParameter }
+            },
+            new() {
+                FullWidth = true,
+                CloseOnEscapeKey = true
+            }
+        );
+    }
+
+    private void TrySubmitForm() {
+        TryFixDatePickerText();
+
+        if (_editContext.Validate()) {
+            Ok();
+        }
+    }
+
+    private void Cancel() {
+        MudDialog.Cancel();
+    }
+
+    [Parameter]
+    public Car? CarParameter { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public StateService StateService { get; set; } = null!;
+
+    public Car Model { get; private set; } = null!;
+
+    private EditContext _editContext = null!;
+
+    private bool _isEditing;
+
+    private MudDatePicker _datePicker = null!;
+
+    private DateTime? _productionYearDateTime;
+
+    private async Task DatePickerMonthChanged(DateTime? dateTime) {
+        if (dateTime is not null)
+            _productionYearDateTime = (DateTime)dateTime;
+
+        var isPickerOpen = await JS.InvokeAsync<bool>("isPickerOpen");
+        if (isPickerOpen) {
+            _datePicker.Close();
+        }
+    }
+
+    private Customer _rentToSelection = null!;
+
+    private void RentToSelectionOnClearButtonClick() {
+        _rentToSelection = _notRented;
+    }
+
+    private Customer _notRented = null!;
+
+    private void TryFixDatePickerText() {
+        if (int.TryParse(_datePicker.Text, out var year)) {
+            _productionYearDateTime = new DateTime(year, 1, 1);
+        }
+    }
+
+    protected override void OnInitialized() {
+        _isEditing = CarParameter is not null;
+        CarParameter ??= new();
+        Model = CarParameter with { };
+        if (!_isEditing || Model.RentState == Car.RentStates.Rented) Model.RentalRecord ??= new(DateTime.Now);
+        _editContext = new(Model);
+
+        _notRented = StateService.Customers.First(x => x.Name == NotRented);
+        _rentToSelection = Model.RentedTo ?? _notRented;
+        try {
+            _productionYearDateTime = new(Model.ProductionYear, 1, 1);
+        } catch {
+            _productionYearDateTime = new DateTime(DateTime.Today.Year, 1, 1);
+        }
+    }
+}

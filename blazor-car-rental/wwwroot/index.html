@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+    <meta name="darkreader-lock"/>
+    <meta content="dark only" name="color-scheme"/>
+    <title>blazor-car-rental</title>
+    <base href="/"/>
+    <link href="css/app.css" rel="stylesheet"/>
+    <script src="js/global.js"></script>
+    <!--suppress HtmlUnknownTarget -->
+    <link href="blazor-car-rental.styles.css" rel="stylesheet"/>
+    <!--suppress HtmlUnknownTarget -->
+    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet"/>
+    <!--suppress HtmlUnknownTarget -->
+    <link href="_content/CodeBeam.MudBlazor.Extensions/MudExtensions.min.css" rel="stylesheet"/>
+
+    <!-- Start Single Page Apps for GitHub Pages -->
+    <script type="text/javascript">
+        // Single Page Apps for GitHub Pages
+        // MIT License
+        // https://github.com/rafgraph/spa-github-pages
+        // This script checks to see if a redirect is present in the query string,
+        // converts it back into the correct url and adds it to the
+        // browser's history using window.history.replaceState(...),
+        // which won't cause the browser to attempt to load the new url.
+        // When the single page app is loaded further down in this file,
+        // the correct url will be waiting in the browser's history for
+        // the single page app to route accordingly.
+        (function (l) {
+            if (l.search[1] === '/') {
+                const decoded = l.search.slice(1).split('&').map(function (s) {
+                    return s.replace(/~and~/g, '&');
+                }).join('?');
+                window.history.replaceState(null, null,
+                    l.pathname.slice(0, -1) + decoded + l.hash
+                );
+            }
+        }(window.location));
+    </script>
+    <!-- End Single Page Apps for GitHub Pages -->
+</head>
+
+<body>
+<div id="app">
+    <div style="display: grid; width: 100vw; height: 100vh; place-content: center">
+        <p style="color: white; font-size: 1.5rem; font-family: sans-serif; padding-inline: 20px;">Loading <span
+                style="color: #702af7; font-weight: 600; text-shadow: #000 0 0 20px, #000000bd 0 0 30px;">Blazor</span>,
+            this will take a few
+            seconds...
+        <p>
+    </div>
+    <!--suppress HtmlUnknownTag -->
+    <style>
+        body {
+            background-color: #1f2222;
+        }
+    </style>
+</div>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a class="reload" href="">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>
+<!--suppress HtmlUnknownTarget -->
+<script src="_framework/blazor.webassembly.js"></script>
+<!--suppress HtmlUnknownTarget -->
+<script src="_content/MudBlazor/MudBlazor.min.js"></script>
+<!--suppress HtmlUnknownTarget -->
+<script src="_content/CodeBeam.MudBlazor.Extensions/MudExtensions.min.js"></script>
+</body>
+
+</html>

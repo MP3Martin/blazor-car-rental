@@ -1,0 +1,22 @@
+.full-size {
+    width: 100vw;
+    height: 100vh;
+    padding: 0 !important;
+}
+
+.mud-overlay.mud-overlay-dialog {
+    /*noinspection CssNonIntegerLengthInPixels*/
+    backdrop-filter: blur(0.2px);
+}
+
+#fullscreen-scroll-table .mud-table-container {
+    max-height: max(calc(100vh - 10rem), 10rem) !important; /* I suck at CSS */
+}
+
+.mud-table-group-header > .mud-table-cell {
+    border-right: none !important;
+}
+
+.mud-picker-container:has( + .mud-picker-actions > #production-year-date-picker) .mud-picker-month-container {
+    display: none;
+}

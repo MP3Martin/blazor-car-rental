@@ -1,0 +1,141 @@
+﻿@page "/settings"
+@using System.Text
+@using blazor_car_rental.Components
+@inject ILocalStorageService LocalStorage
+@inject StateService StateService;
+@inject IJSRuntime JS
+
+<PageName Name="Settings"/>
+
+<MudText>Settings are saved automatically</MudText>
+<br/>
+
+<MudPaper Class=@($"pa-2 mt-2 ma-{(StateService.IsXs ? 0 : 2)}") Style="min-height: 30%;" Outlined="false">
+    <MudForm FieldChanged="OnSettingsChanged">
+        <div style="display: flex; flex-direction: column;" class="gap-2">
+            <MudCard Style="width: fit-content;" Outlined="true">
+                <MudCardHeader Class="pb-1 pt-2 d-block">
+                    <MudText>Exporting and importing config</MudText>
+                    <MudText Typo="Typo.body2" Class="ml-2">All data is stored on your device.</MudText>
+                </MudCardHeader>
+                <MudCardContent Class="pt-1 pb-3">
+                    <div style="display: flex;" class="gap-3">
+                        <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                                   StartIcon="@Icons.Material.Filled.CloudUpload" OnClick=@(() => { JS.InvokeVoidAsync("clickOn", "upload-data"); })>
+                            IMPORT
+                        </MudButton>
+                        <InputFile id="upload-data" hidden OnChange="DataUpload" accept=".json"/>
+                        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="DataDownload"
+                                   StartIcon="@Icons.Material.Filled.CloudDownload">
+                            EXPORT
+                        </MudButton>
+                    </div>
+                    @if (_showingUploadFailed) {
+                        <MudAlert Severity="Severity.Error" Class="mt-2 py-0">Failed to load the data.</MudAlert>
+                    }
+                </MudCardContent>
+            </MudCard>
+            <SettingsOption @bind-Value="StateService.Settings.AutoSave" Name="Auto-save"
+                            Description="Automatically saves changes as soon as there are any.
+Does not affects settings on this page. (they are always auto-saved)"/>
+            @if (!StateService.IsTouchDevice) {
+                <SettingsOption @bind-Value="StateService.Settings.OpenSidebarOnHover" Name="Open sidebar on hover"
+                                Description="Only works on computers with a mouse and also requires a big screen."/>
+            }
+            <MudSpacer/>
+            <MudCard Style=@($"width: fit-content; border-color: {Colors.Red.Lighten1};") Outlined="true">
+                <MudCardHeader Class="pb-1 pt-2 d-block">
+                    <MudText Style=@($"color: {Colors.Red.Lighten1};")>Danger zone</MudText>
+                </MudCardHeader>
+                <MudCardContent Class="pt-1 pb-3">
+                    <MudButton Color="Color.Error" Variant="Variant.Filled"
+                               StartIcon="@Icons.Material.Filled.DeleteForever" OnClick="ResetButtonClicked">
+                        Reset everything
+                    </MudButton>
+                </MudCardContent>
+            </MudCard>
+        </div>
+    </MudForm>
+</MudPaper>
+
+<MudMessageBox @ref="ResetEverythingConfirmMessageBox" Title="Are you sure you want to reset everything?" Message="This can't be undone!">
+    <YesButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" Size="Size.Small" Class="ml-2">Reset!</MudButton>
+    </YesButton>
+    <CancelButton>
+
+        <MudButton Variant="Variant.Filled" Color="Color.Dark" Size="Size.Small">Cancel</MudButton>
+    </CancelButton>
+</MudMessageBox>
+
+@code {
+    protected override void OnInitialized() {
+        StateService.IsXsUpdate += StateHasChanged;
+    }
+
+    MudMessageBox ResetEverythingConfirmMessageBox { get; set; } = null!;
+
+    private CancellationTokenSource? _settingsSaveCts;
+    private bool _settingsAreSaving;
+    private bool _showingUploadFailed;
+
+    private async Task OnSettingsChanged() {
+        StateService.ApplyChangedSettings();
+        if (_settingsAreSaving) return;
+        try {
+            _settingsSaveCts?.Cancel();
+            _settingsSaveCts = new();
+            var cancellationToken = _settingsSaveCts.Token;
+            await Task.Delay(300, cancellationToken);
+            // ReSharper disable MethodSupportsCancellation
+
+            _settingsAreSaving = true;
+            await ActuallySaveSettings(StateService, LocalStorage);
+            _settingsAreSaving = false;
+            // ReSharper restore MethodSupportsCancellation
+        } catch (TaskCanceledException) { }
+    }
+
+    private async Task DataUpload(InputFileChangeEventArgs args) {
+        if (!args.File.ContentType.EndsWith("json")) return;
+        var file = args.File;
+        var buffer = new byte[file.Size];
+        _ = await file.OpenReadStream().ReadAsync(buffer);
+        var content = Encoding.UTF8.GetString(buffer);
+        var saveData = JsonConvert.DeserializeObject<SaveData>(content);
+        if (saveData.GetType().GetFields().Any(x => x.GetValue(saveData) is null)) {
+            // If any of the direct fields of saveData are null
+            _showingUploadFailed = true;
+            return;
+        }
+
+        _showingUploadFailed = false;
+        StateService.Settings = saveData.Settings;
+        StateService.Customers = saveData.Customers;
+
+        StateService.FixImportedCustomers();
+
+        StateService.Edited();
+        _ = OnSettingsChanged();
+    }
+
+    private async Task DataDownload() {
+        var saveData = new SaveData {
+            Customers = StateService.Customers,
+            Settings = StateService.Settings
+        };
+        var asString = JsonConvert.SerializeObject(saveData);
+        var fileStream = new MemoryStream(new UTF8Encoding(true).GetBytes(asString));
+        using var streamRef = new DotNetStreamReference(fileStream);
+        await JS.InvokeVoidAsync("downloadFileFromStream", "blazor-car-rental-save.json", streamRef);
+    }
+
+    private async Task ResetButtonClicked() {
+        var result = await ResetEverythingConfirmMessageBox.Show();
+        if (result is not null) {
+            StateService.Settings = new();
+            StateService.Customers = new();
+            await ActuallySaveSettings(StateService, LocalStorage);
+        }
+    }
+}

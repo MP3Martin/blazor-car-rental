@@ -1,0 +1,25 @@
+{
+    "iisSettings": {
+        "windowsAuthentication": false,
+        "anonymousAuthentication": true,
+        "iisExpress": {
+            "applicationUrl": "http://localhost:32418",
+            "sslPort": 44345
+        }
+    },
+    "profiles": {
+        "blazor-car-rental": {
+            "commandName": "Project",
+            "dotnetRunMessages": true,
+            "launchBrowser": true,
+            "inspectUri": "{wsProtocol}://{url.hostname}:{url.port}/_framework/debug/ws-proxy?browser={browserInspectUri}",
+            "applicationUrl": "http://localhost:5225",
+            "environmentVariables": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            },
+            "hotReloadEnabled": true,
+            "hotReloadProfile": "aspnetcore",
+            "commandLineArgs": "watch run"
+        }
+    }
+}

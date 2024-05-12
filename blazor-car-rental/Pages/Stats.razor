@@ -1,0 +1,18 @@
+﻿@page "/stats"
+@using blazor_car_rental.Components
+
+<PageName Name=@($"{_currentCount} Stats")/>
+
+<h1>Stats</h1>
+
+<MudText role="status">Current count: @_currentCount</MudText>
+
+<MudButton Color="Color.Primary" Variant="Variant.Filled" @onclick="IncrementCount">Click me @_currentCount</MudButton>
+
+@code {
+    private int _currentCount;
+
+    private void IncrementCount() {
+        _currentCount++;
+    }
+}

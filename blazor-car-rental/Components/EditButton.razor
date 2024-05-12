@@ -1,0 +1,17 @@
+@typeparam T
+
+<MudIconButton Size="@Size.Medium" Variant="@Variant.Filled"
+               Style="@($"background-color:{Colors.Cyan.Darken2}; margin: -8px; margin-inline: initial;")"
+               OnClick="() => { ShowDialog(Context); }" Color="Color.Primary"
+               Icon="@Icons.Material.Filled.Edit"/>
+
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public T Context { get; set; } = default!;
+
+    [Parameter]
+    [EditorRequired]
+    public Action<T> ShowDialog { get; set; } = null!;
+}

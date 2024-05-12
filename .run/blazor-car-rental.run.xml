@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="blazor-car-rental" type="RunDotNetWatch" factoryName="RunDotNetWatch" activateToolWindowBeforeRun="false">
+    <option name="exePath" value="$USER_HOME$/.nuget/packages/microsoft.aspnetcore.components.webassembly.devserver/6.0.29/tools/blazor-devserver.dll" />
+    <option name="programParameters" value="" />
+    <option name="projectFilePath" value="$PROJECT_DIR$/blazor-car-rental/blazor-car-rental.csproj" />
+    <option name="projectTfm" value="net6.0" />
+    <option name="restartOnRudeEditEditor" value="true" />
+    <option name="watchParameters" value="" />
+    <option name="workingDirectory" value="$PROJECT_DIR$/blazor-car-rental" />
+    <method v="2" />
+  </configuration>
+</component>

@@ -1,0 +1,177 @@
+﻿@page "/"
+@using blazor_car_rental.Components
+@using blazor_car_rental.Components.Dialogs
+@inject StateService StateService
+@inject IDialogService DialogService
+
+<PageName Name="Index"/>
+
+<MudTable T="Car" Items="StateService.Customers.SelectMany(x => x.RentedCars)" Height="100%"
+          id="fullscreen-scroll-table" GroupHeaderStyle="background-color:var(--mud-palette-background-grey)"
+          Hover="true" Bordered="true" FixedHeader="true" GroupBy="_groupDefinition"
+          GroupHeaderClass="mud-table-group-header"
+          OnRowMouseEnter="RowMouseEnterEvent" OnRowMouseLeave="RowMouseLeaveEvent" Breakpoint="Breakpoint.Sm">
+    <ToolBarContent>
+        <MudText Typo="StateService.IsXs ? Typo.h6 : Typo.h5">List of cars</MudText>
+        <MudSpacer/>
+        <MudButton OnClick="() => { ShowCarDialog(); }" Variant="Variant.Filled" Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add" Size="StateService.IsXs ? Size.Small : Size.Medium">
+            Add a car
+        </MudButton>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>Name</MudTh>
+        <MudTh>Rented since</MudTh>
+        <MudTh>Seat count</MudTh>
+        <MudTh>Mileage</MudTh>
+        <MudTh>Production year</MudTh>
+        <MudTh>Cost per day</MudTh>
+    </HeaderContent>
+    <ColGroup>
+        <col style="width: 0;"/>
+        <col/>
+        <col/>
+    </ColGroup>
+    <GroupHeaderTemplate>
+        <MudTh Class="mud-table-cell-custom-group" colspan="100%">
+            @if (context.Items.First().RentState == Car.RentStates.NotRented) {
+                <MudText>
+                    <GreyText>Not rented</GreyText>
+                </MudText>
+            } else {
+                <MudText>
+                    <span style=@($"color: {Colors.Grey.Lighten1};")>Rented to:</span>
+                    @context.Key
+                </MudText>
+            }
+        </MudTh>
+    </GroupHeaderTemplate>
+    <RowTemplate>
+        <MudTd DataLabel="Name">
+            <MudText Typo="Typo.body1">
+                @context.Manufacturer @context.Model
+                @if (StateService.IsXs) { <br> } else { <span>&nbsp;</span> }
+                <GreyText>[</GreyText>@context.LicensePlate<GreyText>]</GreyText>
+            </MudText>
+        </MudTd>
+        <MudTd DataLabel="Rented since">
+            @context.RentalRecord?.DateRented?.ToShortDateString()
+        </MudTd>
+        <MudTd DataLabel="Seat count">
+            @context.SeatCount
+        </MudTd>
+        <MudTd DataLabel="Mileage">
+            @context.Mileage
+        </MudTd>
+        <MudTd DataLabel="Production year">
+            @context.ProductionYear
+        </MudTd>
+        <MudTd DataLabel="Cost per day">
+            <div class="d-flex">
+                @context.CostPerDay
+                @if (!_editButtonPosition.HasFlag(EditButtonPositions.NewColumn)) {
+                    <MudSpacer/>
+                    {
+                        var visible = context == _currentlyHoveredElement ||
+                            _editButtonPosition.HasFlag(EditButtonPositions.AlwaysVisible);
+                        <span style="visibility: @(visible ? "visible" : "hidden")">
+                            <EditButton Context="context" ShowDialog="ShowCarDialog"/>
+                        </span>
+                    }
+                }
+            </div>
+        </MudTd>
+        @if (_editButtonPosition.HasFlag(EditButtonPositions.NewColumn)) {
+            <MudTd>
+                @if (context == _currentlyHoveredElement ||
+                     _editButtonPosition.HasFlag(EditButtonPositions.AlwaysVisible)) {
+                    <EditButton Context="context" ShowDialog="ShowCarDialog"/>
+                }
+            </MudTd>
+        }
+    </RowTemplate>
+</MudTable>
+
+@code {
+    protected override void OnInitialized() {
+        StateService.EditedUpdate += StateHasChanged;
+        StateService.IsXsUpdate += () => {
+            _editButtonPosition = CalculateEditButtonPosition(StateService);
+            StateHasChanged();
+        };
+    }
+
+    private Car? _currentlyHoveredElement;
+
+    private void RowMouseEnterEvent(TableRowHoverEventArgs<Car> eventArgs) {
+        _currentlyHoveredElement = eventArgs.Item;
+        StateHasChanged();
+    }
+
+    private void RowMouseLeaveEvent(TableRowHoverEventArgs<Car> eventArgs) {
+        _currentlyHoveredElement = null;
+        StateHasChanged();
+    }
+
+    private EditButtonPositions _editButtonPosition;
+
+    private readonly TableGroupDefinition<Car> _groupDefinition = new() {
+        Indentation = false,
+        Expandable = true,
+        IsInitiallyExpanded = true,
+        Selector = e => e.RentedTo?.DisplayName
+    };
+
+    private void ShowCarDialog(Car? car = null) {
+        Task.Run(async () => {
+            var resultCar = await ShowCarDialogAsync(car);
+            if (resultCar is null) return;
+
+            if (resultCar.RentState == Car.RentStates.NotRented) {
+                // ReSharper disable once MergeSequentialChecks
+                if (car is not null && car.RentalRecord is not null) {
+                    car.RentalRecord.DateRented = resultCar.RentalRecord!.DateRented;
+                    car.CostPerDay = resultCar.CostPerDay;
+                    var (hasToPay, days) = car.RentalRecord.CalculatePrice(DateTime.Now, car);
+
+                    _ = DialogService.ShowAsync<ReturnedCarInfoDialog>(null, new DialogParameters<ReturnedCarInfoDialog> {
+                        { x => x.HasToPay, hasToPay },
+                        { x => x.DayCount, days },
+                        { x => x.CostPerDay, car.CostPerDay }
+                    });
+                }
+
+                resultCar.Return(StateService, car);
+            } else {
+                resultCar.RentTo(StateService, resultCar.RentedTo!, resultCar.RentalRecord!, car);
+                resultCar.RentalRecord ??= new(DateTime.Now);
+            }
+
+            StateService.Edited();
+        });
+    }
+
+    // ReSharper disable GrammarMistakeInComment
+    /// <returns>
+    ///     <ul>
+    ///         <li><see cref="Car" /> if submitted<br /></li>
+    ///         <li>null if cancelled</li>
+    ///     </ul>
+    /// </returns>
+    // ReSharper restore GrammarMistakeInComment
+    private async Task<Car?> ShowCarDialogAsync(Car? car) {
+        var dialogResult = await DialogService.ShowAsync<CarDialog>(null,
+            new DialogParameters<CarDialog> {
+                { x => x.CarParameter, car },
+                { x => x.StateService, StateService }
+            },
+            new() {
+                FullWidth = true,
+                CloseOnEscapeKey = true
+            }
+        ).Result.Result;
+        var resultCar = (Car?)dialogResult.Data;
+        var canceled = dialogResult.Canceled;
+        return canceled ? null : resultCar;
+    }
+}

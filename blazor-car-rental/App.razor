@@ -1,0 +1,17 @@
+﻿<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"/>
+        @* <FocusOnNavigate RouteData="@routeData" Selector="h1"/> *@
+    </Found>
+    <NotFound>
+        <PageTitle>Not found</PageTitle>
+        @* <LayoutView Layout="@typeof(MainLayout)"> *@
+        <p role="alert" style="color: rgb(255,142,0); font-size: 1.2rem; font-family: sans-serif; text-align: center; padding-top: 1rem;">
+            <b style="font-size: 2rem;">
+                &nbsp;
+                <span style="transform: translateY(3px); display: inline-block;">404</span> |
+            </b> Sorry, there's nothing at this address.
+        </p>
+        @* </LayoutView> *@
+    </NotFound>
+</Router>

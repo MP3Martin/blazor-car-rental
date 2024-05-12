@@ -1,0 +1,122 @@
+﻿@page "/customers"
+@using blazor_car_rental.Components
+@using blazor_car_rental.Components.Dialogs
+@inject StateService StateService
+@inject IDialogService DialogService
+
+<PageName Name="Customers"/>
+
+<MudTable T="Customer" Items="StateService.Customers.Where(x => x.Name != NotRented).AsEnumerable()" Height="100%" id="fullscreen-scroll-table"
+          Hover="true" Bordered="true" FixedHeader="true"
+          OnRowMouseEnter="RowMouseEnterEvent" OnRowMouseLeave="RowMouseLeaveEvent" Breakpoint="Breakpoint.Xs">
+    <ToolBarContent>
+        <MudText Typo="StateService.IsXs ? Typo.h6 : Typo.h5">List of customers</MudText>
+        <MudSpacer/>
+        <MudButton OnClick="() => { ShowCustomersDialog(); }" Variant="Variant.Filled" Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add" Size="StateService.IsXs ? Size.Small : Size.Medium">
+            Add a customer
+        </MudButton>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>Name</MudTh>
+        <MudTh>Rented cars</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Name">
+            <MudText Typo="Typo.body1">@context.DisplayName</MudText>
+        </MudTd>
+        <MudTd DataLabel="Rented cars">
+            <div class="d-flex">
+                <MudText>
+                    @if (context.RentedCars.Count == 0) {
+                        <i style="color: gray;">Nothing</i>
+                    } else {
+                        @string.Join(", ", context.RentedCars.Select(x => x.Name))
+                        if (context.RentedCars.Count >= 2) {
+                            @($" ({context.RentedCars.Count})")
+                        }
+                    }
+                </MudText>
+                @if (!_editButtonPosition.HasFlag(EditButtonPositions.NewColumn)) {
+                    <MudSpacer/>
+                    {
+                        var visible = context == _currentlyHoveredElement || _editButtonPosition.HasFlag(EditButtonPositions.AlwaysVisible);
+                        <span style="visibility: @(visible ? "visible" : "hidden")">
+                            <EditButton Context="context" ShowDialog="ShowCustomersDialog"/>
+                        </span>
+                    }
+                }
+            </div>
+        </MudTd>
+        @if (_editButtonPosition.HasFlag(EditButtonPositions.NewColumn)) {
+            <MudTd>
+                @if (context == _currentlyHoveredElement || _editButtonPosition.HasFlag(EditButtonPositions.AlwaysVisible)) {
+                    <EditButton Context="context" ShowDialog="ShowCustomersDialog"/>
+                }
+            </MudTd>
+        }
+    </RowTemplate>
+</MudTable>
+
+@code {
+    protected override void OnInitialized() {
+        StateService.EditedUpdate += StateHasChanged;
+        StateService.IsXsUpdate += () => {
+            _editButtonPosition = CalculateEditButtonPosition(StateService);
+            StateHasChanged();
+        };
+    }
+
+    private Customer? _currentlyHoveredElement;
+
+    private void RowMouseEnterEvent(TableRowHoverEventArgs<Customer> eventArgs) {
+        _currentlyHoveredElement = eventArgs.Item;
+        StateHasChanged();
+    }
+
+    private void RowMouseLeaveEvent(TableRowHoverEventArgs<Customer> eventArgs) {
+        _currentlyHoveredElement = null;
+        StateHasChanged();
+    }
+
+    private EditButtonPositions _editButtonPosition;
+
+    private void ShowCustomersDialog(Customer? customer = null) {
+        Task.Run(async () => {
+            var result = await ShowCustomersDialogAsync(customer);
+            if (result is null) return;
+
+            if (customer is null) {
+                StateService.Customers.Add(result);
+            } else {
+                StateService.Customers[StateService.Customers.IndexOf(customer)] = result;
+            }
+
+            StateService.Edited();
+        });
+    }
+
+    // ReSharper disable GrammarMistakeInComment
+    /// <returns>
+    ///     <ul>
+    ///         <li><see cref="Customer" /> if submitted<br /></li>
+    ///         <li>null if cancelled</li>
+    ///     </ul>
+    /// </returns>
+    // ReSharper restore GrammarMistakeInComment
+    private async Task<Customer?> ShowCustomersDialogAsync(Customer? customer) {
+        var dialogResult = await DialogService.ShowAsync<CustomersDialog>(null,
+            new DialogParameters<CustomersDialog> {
+                { x => x.CustomerParameter, customer }
+            },
+            new() {
+                FullWidth = true,
+                CloseOnEscapeKey = true
+            }
+        ).Result.Result;
+        var result = dialogResult.Data;
+        var canceled = dialogResult.Canceled;
+        if (canceled) return null;
+        return (Customer)result;
+    }
+}

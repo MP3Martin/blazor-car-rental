@@ -1,0 +1,203 @@
+﻿@using Settings = Settings
+@inherits LayoutComponentBase
+@inject PageNameService PageNameService;
+@inject StateService StateService;
+@inject ILocalStorageService LocalStorage
+@* ReSharper disable once InconsistentNaming *@
+@inject IJSRuntime JS
+
+<PageTitle>@PageNameService.CurrentPageName</PageTitle>
+
+<MudThemeProvider IsDarkMode="true" Theme="Theme"/>
+<MudDialogProvider/>
+<MudSnackbarProvider/>
+
+@* NOTE_1: Hacky solution because the normal solution didn't update properly *@
+<MudHidden Breakpoint="Breakpoint.MdAndUp" @* <- What to consier as a big screen *@>
+    @{ _bigEnough = false; }
+</MudHidden>
+<MudHidden Breakpoint="Breakpoint.SmAndDown" @* <- What to consier as a small screen *@>
+    @{ _bigEnough = true; }
+</MudHidden>
+<MudHidden Breakpoint="Breakpoint.SmAndUp">
+    @{ StateService.IsXs = true; }
+</MudHidden>
+<MudHidden Breakpoint="Breakpoint.Xs">
+    @{ StateService.IsXs = false; }
+</MudHidden>
+
+<div class="page">
+    <main>
+        <article class="full-size" style="padding: 0 !important;">
+            <MudLayout>
+                <MudAppBar Elevation="1" Dense="true">
+                    <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
+                                   OnClick="ToggleDrawerOpen"/>
+                    <MudText Typo="Typo.h6" Class="ml-2">@PageNameService.CurrentPageName</MudText>
+                    <MudSpacer/>
+                    <span Class=@(StateService.SaveButtonLoading ? "cursor-wait" : null)>
+                        <MudButton OnClick="SaveCustomersAsync" Variant="Variant.Filled"
+                                   StartIcon="@(StateService.SaveButtonLoading ? null : Icons.Material.Filled.Save)"
+
+                                   Disabled="!StateService.IsEdited || StateService.SaveButtonLoading" Color="Color.Info" Size="Size.Small">
+                            @if (StateService.SaveButtonLoading) {
+                                <MudProgressCircular Class="ms-n1 mr-1 my-n1" Size="Size.Small" Indeterminate="true"/>
+                            }
+                            @(StateService.SaveButtonLoadingText ? "Loading..." : "Save")
+                        </MudButton>
+                    </span>
+                    <MudIconButton Class="ml-2" Icon="@Icons.Custom.Brands.GitHub" Color="Color.Inherit"
+                                   Href="https://github.com/MP3Martin/blazor-car-rental" Target="_blank"/>
+                </MudAppBar>
+                <MudDrawer @bind-Open="_isDrawerOpen" Width="10rem" Anchor="Anchor.Left"
+                           ClipMode="DrawerClipMode.Always" OpenMiniOnHover="OpenMiniOnHover()"
+                           Elevation="1" DisableOverlay="_bigEnough"
+                           Variant="_bigEnough ? DrawerVariant.Mini : DrawerVariant.Temporary" PreserveOpenState="true">
+                    <MudNavMenu>
+                        <MudNavLink Href="/" Match="NavLinkMatch.All"
+                                    Icon="@Icons.Material.Filled.Dataset">
+                            Mange
+                        </MudNavLink>
+                        <MudNavLink Href="customers" Match="NavLinkMatch.All"
+                                    Icon="@Icons.Material.Filled.People">
+                            Customers
+                        </MudNavLink>
+                        @* TODO: https://github.com/users/MP3Martin/projects/5/views/1?pane=issue&itemId=61082504 *@
+                        @* <MudNavLink Href="stats" Match="NavLinkMatch.All" *@
+                        @*             Icon="@Icons.Material.Filled.QueryStats"> *@
+                        @*     Stats *@
+                        @* </MudNavLink> *@
+                        <MudNavLink Href="settings" Match="NavLinkMatch.All"
+                                    Icon="@Icons.Material.Filled.Settings">
+                            Settings
+                        </MudNavLink>
+                    </MudNavMenu>
+                </MudDrawer>
+                <MudMainContent Class="pt-16 px-10">
+                    <MudContainer Class="mt-6 ml-0">
+                        @if (StateService.SaveButtonLoadingText) {
+                            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="50%" Height="5rem"
+                                         Animation="Animation.Wave"/>
+                            foreach (var _ in Enumerable.Range(0, 2)) {
+                                <MudSkeleton Width="50%" Height="2rem" Animation="Animation.Wave"/>
+                            }
+                        } else {
+                            @Body
+                        }
+                    </MudContainer>
+                </MudMainContent>
+            </MudLayout>
+        </article>
+    </main>
+</div>
+
+
+@code {
+    public MudTheme Theme { get; } = new() {
+        PaletteDark = new PaletteDark {
+            // ReSharper disable StringLiteralTypo
+            TextPrimary = Colors.Grey.Lighten4,
+            TextSecondary = "#EEEEEE",
+            Background = "#1f2222"
+            // ReSharper restore StringLiteralTypo
+        }
+    };
+
+    bool _isDrawerOpen;
+    void ToggleDrawerOpen() {
+        _isDrawerOpen = !_isDrawerOpen;
+        StateHasChanged();
+    }
+
+    // See NOTE_1
+    private bool _lastBigEnough;
+    private bool _bigEnough = true;
+
+    // See NOTE_1
+    MyTimer? _updateRenderTimer;
+    protected override void OnAfterRender(bool firstRender) {
+        if (!firstRender) return;
+
+        _updateRenderTimer = new(() => {
+            if (_bigEnough != _lastBigEnough) /* Has changed */ {
+                StateHasChanged();
+                Task.Run(async () => {
+                    await Task.Delay(10);
+                    StateHasChanged();
+                });
+            }
+
+            _lastBigEnough = _bigEnough;
+        }, 500);
+        _updateRenderTimer.Start();
+    }
+
+    protected override void OnInitialized() {
+        StateService.IsTouchDevice = ((IJSInProcessRuntime)JS).Invoke<bool>("isTouchDevice"); // Synchronous
+        PageNameService.OnChange += StateHasChanged;
+        StateService.MainLayoutUpdate += StateHasChanged;
+        StateService.TryAutoSave += () => { _ = SaveCustomersAsync(); };
+        StateService.SettingsChanged += StateHasChanged;
+    }
+
+    protected override async Task OnInitializedAsync() {
+        // See NOTE_1
+        await Task.Delay(10);
+        StateHasChanged();
+        await LoadAsync();
+        StateHasChanged();
+    }
+
+    private async Task SaveCustomersAsync() {
+        StateService.SaveButtonLoading = true;
+        await Task.Delay(20);
+        var serializedCustomers = JsonConvert.SerializeObject(StateService.Customers);
+        await LocalStorage.SetItemAsStringAsync("customers", serializedCustomers);
+        await Task.Delay(20);
+        StateService.IsEdited = false;
+        StateService.SaveButtonLoading = false;
+    }
+
+    private async Task LoadAsync() {
+        StateService.SaveButtonLoadingText = true;
+        await Task.Delay(1);
+
+        // Settings
+        var settingsString = await LocalStorage.GetItemAsStringAsync("settings");
+        if (settingsString is not null) {
+            var deserializedSettings = JsonConvert.DeserializeObject<Settings>(settingsString);
+            StateService.Settings = deserializedSettings ?? new();
+        } else {
+            await ActuallySaveSettings(StateService, LocalStorage);
+        }
+
+        StateService.ApplyChangedSettings();
+
+        // Customer
+        var customersString = await LocalStorage.GetItemAsStringAsync("customers");
+        if (customersString is not null) {
+            var deserializedCustomers = JsonConvert.DeserializeObject<List<Customer>>(customersString);
+            StateService.Customers = deserializedCustomers ?? new();
+
+            StateService.FixImportedCustomers();
+        } else {
+            await SaveCustomersAsync();
+        }
+
+        // Add a missing internal customer
+        if (StateService.Customers.All(x => x.Name != NotRented)) {
+            StateService.Customers.Add(new(StateService) {
+                Name = NotRented
+            });
+        }
+
+        await Task.Delay(1);
+        StateService.SaveButtonLoadingText = false;
+    }
+
+    private bool OpenMiniOnHover() {
+        // ReSharper disable once ConvertIfStatementToReturnStatement
+        if (StateService.IsTouchDevice) return false;
+        return StateService.Settings.OpenSidebarOnHover;
+    }
+}
