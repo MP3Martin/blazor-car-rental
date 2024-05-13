@@ -22,15 +22,15 @@ When you open the site, the main page opens automatically. There you can see car
 
 ### Creating and editing
 
-There is a purple "Add a car" button that show a dialog where you can edit all the info about the new car. That same dialog is used for editing cars.
+There is a purple "Add a car" button that show a dialog where you can edit all the info about the new car. That same
+dialog is used for editing cars.
 
-If you are on a pc, you can move your cursor over the individual cars and an edit button will appear to edit them. The edit buttons are always visible on touch devices.
+If you are on a pc, you can move your cursor over the individual cars and an edit button will appear to edit them. The
+edit buttons are always visible on touch devices.
 
-[//]: # ()
-[//]: # (## Customers page)
+## Customers page
 
-[//]: # ()
-[//]: # (Todo)
+This page is only for managing customers. You can also use this page to quickly se all the cars that are rented to a speicfic customer.
 
 ## Settings
 
