@@ -6,7 +6,7 @@ to see this webpage in Czech language 🇨🇿
 
 # Basic info
 
-This website uses Blazor WASM for the frontend and there is no backend.
+This website uses Blazor WASM for the frontend and there is no backend, which means that C# is running in your browser.
 It is a single-page app, so you don't have to wait when switching between pages.
 The application is admin-pov only.
 
