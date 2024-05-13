@@ -30,7 +30,8 @@ edit buttons are always visible on touch devices.
 
 ## Customers page
 
-This page is only for managing customers. You can also use this page to quickly se all the cars that are rented to a speicfic customer.
+This page is only for managing customers. You can also use this page to quickly se all the cars that are rented to a
+specific customer.
 
 ## Settings
 
