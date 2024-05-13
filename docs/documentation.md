@@ -19,7 +19,7 @@ The application is admin-pov only.
 -->
 
 ## Settings
-The settings are stored in a different Local storage field, but the exported JSON contains both [Customers and Settings](../blazor-car-rental/Classes/SaveData.cs). Settings are automatically saved, but not immediately. The actual settings saving [is debounced](https://github.com/MP3Martin/blazor-car-rental/blob/main/blazor-car-rental%2FPages%2FSettings.razor#L78-L98) ([explanation here](https://medium.com/@jamischarles/what-is-debouncing-2505c0648ff1)) and triggers on any setting change.
+The settings are stored in a different Local storage field, but the exported JSON contains both [Customers and Settings](../blazor-car-rental/Classes/SaveData.cs). Settings are automatically saved, but not immediately. The actual settings saving [is debounced](https://github.com/MP3Martin/blazor-car-rental/blob/main/blazor-car-rental%2FPages%2FSettings.razor#L78-L97) ([explanation here](https://medium.com/@jamischarles/what-is-debouncing-2505c0648ff1)) and triggers on any setting change.
 
 # Storing data
 All data is serialized using [Newtonsoft.Json](https://www.newtonsoft.com/json) and stored in [Local storage](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage#description).
