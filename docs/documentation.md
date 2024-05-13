@@ -16,6 +16,7 @@ The application is admin-pov only.
 ## Customers page
 
 ## Settings
+The settings are stored in a different Local storage field, but the exported JSON contains both [Customers and Settings](../blazor-car-rental/Classes/SaveData.cs).
 -->
 
 # Storing data
