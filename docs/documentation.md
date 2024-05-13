@@ -7,9 +7,10 @@ This website uses Blazor WASM for the frontend and there is no backend.
 It is a single-page app, so you don't have to wait when switching between pages.
 The application is admin-pov only.
 
+# Pages
+
 <!-- TODO: -->
 <!--
-# Pages
 
 ## Main page (cars)
 
