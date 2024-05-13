@@ -51,6 +51,9 @@ namespace blazor_car_rental {
         public string Name => $"{Manufacturer} {Model}";
         public string DisplayName => Name;
 
+        /// <summary>
+        ///     Rents this car to a customer
+        /// </summary>
         public void RentTo(StateService stateService, Customer customer, RentalRecord rentalRecord, Car? oldCar = null) {
             foreach (var customerItem in stateService.Customers) {
                 customerItem.RentedCars.Remove(this);
@@ -63,6 +66,9 @@ namespace blazor_car_rental {
             customer.RentedCars.Add(this);
         }
 
+        /// <summary>
+        ///     Returns this car
+        /// </summary>
         public void Return(StateService stateService, Car? oldCar = null) {
             foreach (var customer in stateService.Customers) {
                 customer.RentedCars.Remove(this);
